@@ -1,0 +1,29 @@
+diff --git a/reviewbot/models.py b/reviewbot/models.py
+index 1111111..2222222 100644
+--- a/reviewbot/models.py
++++ b/reviewbot/models.py
+@@ -1,6 +1,7 @@
+ from typing import List, Literal, Optional
+ from pydantic import BaseModel, Field
++
+ Severity = Literal["blocker", "major", "minor", "nit"]
+ Category = Literal["bug", "security", "perf", "style", "design", "docs"]
+ Verdict = Literal["approve", "approve_with_comments", "request_changes"]
+@@ -12,6 +13,7 @@ class ReviewComment(BaseModel):
+     category: Category
+     message: str = Field(..., description="One or two sentence explanation of the issue")
+     suggestion: Optional[str] = Field(
++        None, description="Concrete fix, if obvious. Null otherwise."
+         None, description="Concrete fix, if obvious. Null otherwise."
+     )
+
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000..3333333
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,4 @@
++# ReviewBot
++
++A tiny AI code review assistant.
++More details coming soon.

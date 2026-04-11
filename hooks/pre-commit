@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+
+reviewbot
+status=$?
+
+if [ "$status" -ne 0 ]; then
+  echo "Commit blocked by ReviewBot. Bypass with: git commit --no-verify"
+  exit "$status"
+fi
+
+exit 0

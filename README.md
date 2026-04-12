@@ -1,30 +1,44 @@
 # ReviewBot
 
-ReviewBot is a lightweight Python CLI that reviews git diffs with an LLM and reports structured findings in the terminal. The codebase stays intentionally small: git capture, diff splitting, prompt construction, model calls, schema validation, and reporting are isolated so you can keep shipping quickly now without boxing yourself out of a richer cloud-versus-local backend later.
+AI-powered code reviewer that runs locally from your terminal. Point it at any git repo, and it reviews your staged changes using Llama 3.3 70B via Groq — returning structured, severity-ranked comments with concrete fix suggestions.
 
-## Why
+![ReviewBot Demo](assets/demo.png)
 
-- Local-first option: the client boundary is thin enough to swap Groq for a local model backend later without rewriting the CLI.
-- Schema-validated LLM output: every model response is parsed into strict Pydantic v2 models, with a repair path when JSON comes back malformed.
-- Git-native workflow: the tool reviews staged changes, the last commit, or a single file directly from git diffs instead of inventing a separate review format.
+## Features
 
-### Install
+- **One-command setup** — interactive wizard configures everything on first run
+- **Zero-friction review** — just type `reviewbot` inside any git repo
+- **Schema-validated output** — every LLM response is parsed into strict Pydantic v2 models with automatic repair on malformed JSON
+- **Severity-ranked comments** — blocker, major, minor, nit — with categories (bug, security, perf, style, design, docs)
+- **Git-native** — reviews staged changes, last commit, or a single file directly from unified diffs
+- **Rate-limit safe** — synchronous processing with 3s inter-call throttle, 10s backoff on 429, max 3 retries
+- **Swappable backend** — designed for easy addition of Ollama (local/offline) or Gemini backends
+
+## Install
 
 ```bash
-pipx install reviewbot
+pipx install git+https://github.com/Nilay-Mehta/reviewbot.git
 ```
 
-### First run
+Or from source:
 
 ```bash
-reviewbot setup
+git clone https://github.com/Nilay-Mehta/reviewbot.git
+cd reviewbot
+pipx install -e .
 ```
 
-The setup wizard stores your Groq API key and model choice in a local ReviewBot config file so you can start reviewing inside any git repo without manually managing environment variables or `.env` files.
+## First Run
+
+```bash
+reviewbot
+```
+
+On first launch, the setup wizard walks you through backend selection and API key configuration. Your settings are saved to `~/.reviewbot/config.toml` — no manual env vars or `.env` files needed.
 
 ## Usage
 
-Review staged changes:
+Review staged changes (default):
 
 ```bash
 reviewbot
@@ -36,25 +50,61 @@ Review the last commit:
 reviewbot --last
 ```
 
-Review one file:
+Review a single file:
 
 ```bash
 reviewbot --file path/to/file.py
 ```
 
-## Architecture
+Re-run setup anytime:
 
-The pipeline is git diff capture -> per-file chunks -> prompt builder -> Groq in JSON mode -> parse and repair -> rich terminal reporter. Each file is reviewed independently so line references stay grounded, and the model output is validated against strict Pydantic schemas before it is rendered. Rate-limit handling is intentionally kept in `cli.py`, where requests run in a synchronous loop with backoff and a 3 second inter-call delay to stay predictable under free-tier limits.
+```bash
+reviewbot setup
+```
 
-## Rate Limit Safety
+## How It Works
 
-Groq's free tier is treated as roughly 12k tokens per minute and 30 requests per minute, so the bot avoids bursty fan-out. It processes files synchronously, waits 3 seconds between calls, backs off for 10 seconds on HTTP 429 responses, and gives up after 3 retries instead of hammering the API. That keeps the behavior simple, understandable, and much less likely to fail mid-review on larger staged changes.
+```
+git diff --cached
+      |
+      v
+  diff_parser ---- split into per-file chunks
+      |
+      v
+  prompt_builder -- inject chunk + JSON schema into prompt
+      |
+      v
+  groq_client ---- call Llama 3.3 70B (JSON mode, temp 0.2)
+      |
+      v
+  output_parser --- validate against Pydantic schema, repair if needed
+      |
+      v
+  reporter -------- Rich table with colored severity + exit code
+```
 
-## Tech
+Each file is reviewed independently so line references stay grounded. The pipeline is synchronous with built-in rate-limit protection for Groq's free tier (12k TPM / 30 RPM).
 
-- Python
-- Typer
-- Rich
-- Pydantic v2
-- Groq SDK
-- Llama 3.3 70B
+## Pre-commit Hook
+
+Auto-review on every commit:
+
+```bash
+cp hooks/pre-commit .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+Commits with blocker or major findings are blocked. Bypass with `git commit --no-verify`.
+
+## Tech Stack
+
+- **Python 3.11+**
+- **Typer** — CLI framework
+- **Rich** — terminal formatting
+- **Pydantic v2** — schema validation
+- **Groq SDK** — LLM API client
+- **Llama 3.3 70B** — code review model
+
+## License
+
+MIT

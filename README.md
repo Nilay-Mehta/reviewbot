@@ -14,7 +14,16 @@ AI-powered code reviewer that runs locally from your terminal. Point it at any g
 - **Rate-limit safe** — synchronous processing with 3s inter-call throttle, 10s backoff on 429, max 3 retries
 - **Swappable backend** — designed for easy addition of Ollama (local/offline) or Gemini backends
 
-## Install
+## Getting Started
+
+### 1. Prerequisites
+
+- **Python 3.11+** — check with `python --version`
+- **pipx** — install with `python -m pip install --user pipx && python -m pipx ensurepath` (then reopen your terminal)
+- **Git** — any recent version
+- **Groq API key** (free) — sign up at https://console.groq.com/keys, click "Create API Key", and copy it
+
+### 2. Install ReviewBot
 
 ```bash
 pipx install git+https://github.com/Nilay-Mehta/reviewbot.git
@@ -28,13 +37,34 @@ cd reviewbot
 pipx install -e .
 ```
 
-## First Run
+After installation, the `reviewbot` command is available globally from any terminal window.
+
+### 3. First Run Setup
+
+Open any terminal and type:
 
 ```bash
 reviewbot
 ```
 
-On first launch, the setup wizard walks you through backend selection and API key configuration. Your settings are saved to `~/.reviewbot/config.toml` — no manual env vars or `.env` files needed.
+The setup wizard will launch automatically and walk you through:
+
+1. **Backend selection** — choose Groq (cloud, free tier) or Ollama (local, coming soon)
+2. **API key** — paste the Groq key you copied earlier
+3. **Model** — press Enter to use the default (Llama 3.3 70B) or type a different model name
+4. **Connection test** — verifies your key works before saving
+
+Your settings are saved to `~/.reviewbot/config.toml`. You only do this once — after setup, `reviewbot` goes straight to reviewing code. To reconfigure later, run `reviewbot setup`.
+
+### 4. Review Your First Diff
+
+```bash
+cd your-project
+git add .
+reviewbot
+```
+
+That's it. ReviewBot reads your staged changes, sends each file to the LLM, and prints a severity-ranked review table in your terminal.
 
 ## Usage
 

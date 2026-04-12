@@ -249,7 +249,8 @@ def _run_setup_wizard() -> None:
 
     while True:
         api_key = typer.prompt("Groq API key").strip()
-        model = typer.prompt("Model", default=DEFAULT_MODEL).strip() or DEFAULT_MODEL
+        console.print(f"[dim]Press Enter to use default: {DEFAULT_MODEL}[/dim]")
+        model = typer.prompt("Model", default=DEFAULT_MODEL, show_default=False).strip() or DEFAULT_MODEL
 
         ok, message = _test_groq_credentials(api_key, model)
         if ok:

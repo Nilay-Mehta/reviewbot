@@ -1,12 +1,13 @@
-import os
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
 from groq import Groq
 
+from reviewbot import config
+
 load_dotenv()
 
-DEFAULT_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+DEFAULT_MODEL = config.get_model()
 
 
 class GroqConfigError(RuntimeError):
@@ -25,10 +26,10 @@ class GroqClient:
     temperature: float = 0.2
 
     def __post_init__(self) -> None:
-        api_key = os.getenv("GROQ_API_KEY")
+        api_key = config.get_api_key()
         if not api_key:
             raise GroqConfigError(
-                "GROQ_API_KEY not set. Copy .env.example to .env and add your key."
+                "Groq API key not configured. Run `reviewbot setup` to get started."
             )
         self._client = Groq(api_key=api_key)
 

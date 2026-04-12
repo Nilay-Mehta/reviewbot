@@ -8,19 +8,19 @@ ReviewBot is a lightweight Python CLI that reviews git diffs with an LLM and rep
 - Schema-validated LLM output: every model response is parsed into strict Pydantic v2 models, with a repair path when JSON comes back malformed.
 - Git-native workflow: the tool reviews staged changes, the last commit, or a single file directly from git diffs instead of inventing a separate review format.
 
-## Install
+### Install
 
 ```bash
-pip install -e .
+pipx install reviewbot
 ```
 
-Then create your environment file:
+### First run
 
 ```bash
-copy .env.example .env
+reviewbot setup
 ```
 
-Set `GROQ_API_KEY` in `.env`, and optionally override `GROQ_MODEL` if you do not want the default Groq model.
+The setup wizard stores your Groq API key and model choice in a local ReviewBot config file so you can start reviewing inside any git repo without manually managing environment variables or `.env` files.
 
 ## Usage
 

@@ -6,8 +6,9 @@ import time
 import typer
 from rich.console import Console
 from rich.markup import escape
+from rich.panel import Panel
 
-from reviewbot import git_utils
+from reviewbot import config, git_utils
 from reviewbot.diff_parser import iter_reviewable_chunks
 from reviewbot.groq_client import GroqClient, GroqConfigError
 from reviewbot.models import FileReview, ReviewResult
@@ -26,11 +27,13 @@ THROTTLE_SECONDS = 3
 RATE_LIMIT_BACKOFF = 10
 MAX_BACKOFF_ATTEMPTS = 3
 CONNECTION_BACKOFF = 2
+DEFAULT_MODEL = "llama-3.3-70b-versatile"
 
 app = typer.Typer(
     name="reviewbot",
     help="AI code review bot - runs LLM review over git diffs.",
     no_args_is_help=False,
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 console = Console()
 
@@ -38,7 +41,7 @@ console = Console()
 def _complete_with_backoff(client: GroqClient, system: str, user: str) -> str | None:
     """Call Groq synchronously with retries on 429, 5xx, and connection errors.
 
-    Returns None only after exhausting MAX_BACKOFF_ATTEMPTS — callers should
+    Returns None only after exhausting MAX_BACKOFF_ATTEMPTS - callers should
     treat that as a soft failure and keep going.
     """
     for attempt in range(1, MAX_BACKOFF_ATTEMPTS + 1):
@@ -85,16 +88,7 @@ def _aggregate_verdict(file_reviews: list[FileReview]) -> str:
     return "approve"
 
 
-@app.command()
-def review(
-    last: bool = typer.Option(
-        False, "--last", help="Review the last commit instead of staged changes."
-    ),
-    file: str = typer.Option(
-        None, "--file", help="Review only the staged diff for this file."
-    ),
-) -> None:
-    """Review staged changes (default) or the last commit."""
+def _run_review(last: bool = False, file: str | None = None) -> None:
     try:
         if last:
             diff = git_utils.get_last_commit_diff()
@@ -159,8 +153,6 @@ def review(
 
         aggregated.extend(chunk_result.files)
 
-        # Throttle between chunks to stay well under 30 RPM and give the
-        # 12k TPM sliding window time to drain. Skip the wait after the last chunk.
         if index < len(chunks):
             time.sleep(THROTTLE_SECONDS)
 
@@ -180,6 +172,130 @@ def review(
     console.print()
     exit_code = render_review_report(final, console)
     raise typer.Exit(code=exit_code)
+
+
+def _parse_default_review_args(args: list[str]) -> tuple[bool, str | None]:
+    last = False
+    file: str | None = None
+    index = 0
+
+    while index < len(args):
+        arg = args[index]
+        if arg == "--last":
+            last = True
+            index += 1
+            continue
+        if arg == "--file":
+            if index + 1 >= len(args):
+                console.print("[red]Missing value for --file[/red]")
+                raise typer.Exit(code=2)
+            file = args[index + 1]
+            index += 2
+            continue
+        if arg.startswith("--file="):
+            file = arg.split("=", 1)[1]
+            index += 1
+            continue
+        console.print(f"[red]Unknown option:[/red] {escape(arg)}")
+        raise typer.Exit(code=2)
+
+    return last, file
+
+
+def _test_groq_credentials(api_key: str, model: str) -> tuple[bool, str]:
+    original_key = config.get_api_key
+    original_model = config.get_model
+
+    try:
+        config.get_api_key = lambda: api_key
+        config.get_model = lambda: model
+        client = GroqClient(model=model)
+        client.complete("You are a test. Respond in json.", '{"status": "ok"}')
+        return True, "Connection successful."
+    except RateLimitError:
+        return True, "Connection works but you're being rate-limited, try again in a minute."
+    except APIStatusError as error:
+        status = getattr(error, "status_code", None)
+        if status == 429:
+            return True, "Connection works but you're being rate-limited, try again in a minute."
+        return False, str(error)
+    except Exception as error:  # pragma: no cover - network/API variability
+        return False, str(error)
+    finally:
+        config.get_api_key = original_key
+        config.get_model = original_model
+
+
+def _run_setup_wizard() -> None:
+    console.print(
+        Panel.fit(
+            "[bold cyan]Welcome to ReviewBot[/bold cyan]\n"
+            "Let's configure your AI code review bot for first use.",
+            border_style="cyan",
+        )
+    )
+
+    while True:
+        console.print("[bold]Choose your LLM backend:[/bold] 1) Groq  2) Ollama (coming soon)")
+        choice = typer.prompt("Backend", default="1").strip()
+        if choice == "1":
+            break
+        if choice == "2":
+            console.print("[yellow]Ollama support coming soon.[/yellow]")
+            continue
+        console.print("[red]Please enter 1 or 2.[/red]")
+
+    console.print("[bold]Get your free API key at[/bold] https://console.groq.com/keys")
+
+    while True:
+        api_key = typer.prompt("Groq API key").strip()
+        model = typer.prompt("Model", default=DEFAULT_MODEL).strip() or DEFAULT_MODEL
+
+        ok, message = _test_groq_credentials(api_key, model)
+        if ok:
+            if "rate-limited" in message:
+                console.print(f"[yellow]{escape(message)}[/yellow]")
+            else:
+                console.print(f"[green]OK: {escape(message)}[/green]")
+            config.save_config({"groq": {"api_key": api_key, "model": model}})
+            console.print("[green]Setup complete! Run `reviewbot` inside any git repo.[/green]")
+            return
+
+        console.print(f"[red]Connection test failed:[/red] {escape(message)}")
+        if not typer.confirm("Do you want to re-enter the key?", default=True):
+            raise typer.Exit(code=1)
+
+
+@app.callback(invoke_without_command=True)
+def main_callback(ctx: typer.Context) -> None:
+    if ctx.invoked_subcommand is not None:
+        return
+
+    if config.config_exists():
+        last, file = _parse_default_review_args(list(ctx.args))
+        _run_review(last=last, file=file)
+        return
+
+    _run_setup_wizard()
+
+
+@app.command("review")
+def review(
+    last: bool = typer.Option(
+        False, "--last", help="Review the last commit instead of staged changes."
+    ),
+    file: str = typer.Option(
+        None, "--file", help="Review only the staged diff for this file."
+    ),
+) -> None:
+    """Review staged changes (default) or the last commit."""
+    _run_review(last=last, file=file)
+
+
+@app.command("setup")
+def setup() -> None:
+    """Run the interactive first-run setup wizard."""
+    _run_setup_wizard()
 
 
 def main() -> None:

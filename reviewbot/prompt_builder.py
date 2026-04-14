@@ -1,13 +1,24 @@
 from pathlib import Path
+from importlib.resources import files
 
-SYSTEM_PROMPT = """You are a senior software engineer performing a strict but fair code review.
-
-You only flag real issues — never invent problems to seem useful. If a diff looks fine, return an empty comments array. A clean review is a valid and common response.
-
-You respond with ONLY a single JSON object matching the required schema. No prose, no markdown, no code fences — just the JSON object."""
+_PROMPTS_DIR = files("reviewbot") / "prompts"
+VALID_MODES = {"errors", "security", "perf", "style", "explain", "detail"}
+DEFAULT_MODE = "errors"
 
 
-STRICT_REMINDER = """Your previous response was not valid JSON matching the required schema. Return ONLY the JSON object — no prose, no code fences, no explanation. Start with { and end with }."""
+def load_system_prompt(mode: str) -> str:
+    """Load the system prompt for the given mode from reviewbot/prompts/<mode>.md."""
+    if mode not in VALID_MODES:
+        raise ValueError(f"Unknown mode: {mode}. Valid modes: {sorted(VALID_MODES)}")
+    prompt_file = _PROMPTS_DIR / f"{mode}.md"
+    return prompt_file.read_text(encoding="utf-8")
+
+
+# Keep the old SYSTEM_PROMPT name for backward compat as the default
+SYSTEM_PROMPT = load_system_prompt(DEFAULT_MODE)
+
+
+STRICT_REMINDER = """Your previous response was not valid JSON matching the required schema. Return ONLY the JSON object - no prose, no code fences, no explanation. Start with { and end with }."""
 
 
 _LANGUAGE_BY_EXT = {
@@ -85,10 +96,10 @@ Return exactly one JSON object with this shape:
 }
 
 Rules:
-- The files array must contain exactly one entry — the file above.
+- The files array must contain exactly one entry - the file above.
 - If the diff is fine, return a files entry with an empty comments array and a neutral summary, and "overall_verdict": "approve".
 - Only flag issues you can point to specifically in the diff above.
-- Line numbers must reference lines actually present in the diff — never invent them. Prefer null over guessing.
+- Line numbers must reference lines actually present in the diff above - never invent them. Prefer null over guessing.
 - "blocker" is reserved for genuine correctness or security bugs. Most comments should be "minor" or "nit".
 - Never output anything outside the single JSON object.
 """
@@ -104,5 +115,5 @@ def build_user_prompt(filename: str, hunk: str) -> str:
 
 
 def estimate_tokens(text: str) -> int:
-    """Cheap heuristic — assume ~4 characters per token. Used only for rate budgeting."""
+    """Cheap heuristic - assume ~4 characters per token. Used only for rate budgeting."""
     return max(1, len(text) // 4)

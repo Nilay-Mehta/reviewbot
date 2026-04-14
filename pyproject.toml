@@ -26,5 +26,8 @@ reviewbot = "reviewbot.cli:main"
 [tool.setuptools]
 packages = ["reviewbot"]
 
+[tool.setuptools.package-data]
+reviewbot = ["prompts/*.md"]
+
 [tool.setuptools.dynamic]
 version = {attr = "reviewbot.__version__"}

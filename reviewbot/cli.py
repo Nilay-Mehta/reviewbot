@@ -15,7 +15,7 @@ from reviewbot.diff_parser import iter_reviewable_chunks
 from reviewbot.groq_client import GroqClient, GroqConfigError
 from reviewbot.models import FileReview, ReviewResult
 from reviewbot.output_parser import OutputParseError, parse_review_result
-from reviewbot.prompt_builder import SYSTEM_PROMPT, build_user_prompt
+from reviewbot.prompt_builder import build_user_prompt, load_system_prompt, VALID_MODES
 from reviewbot.reporter import render_review_report
 
 try:
@@ -35,6 +35,7 @@ app = typer.Typer(
     name="reviewbot",
     help="AI code review bot - runs LLM review over git diffs.",
     no_args_is_help=False,
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 console = Console()
 
@@ -89,7 +90,7 @@ def _aggregate_verdict(file_reviews: list[FileReview]) -> str:
     return "approve"
 
 
-def _run_review(last: bool = False, file: str | None = None) -> None:
+def _run_review(last: bool = False, file: str | None = None, mode: str = "errors") -> None:
     try:
         if last:
             diff = git_utils.get_last_commit_diff()
@@ -112,6 +113,20 @@ def _run_review(last: bool = False, file: str | None = None) -> None:
 
     from reviewbot.ollama_client import OllamaConfigError, OllamaConnectionError
 
+    if mode not in VALID_MODES:
+        console.print(f"[red]Unknown mode:[/red] {mode}. Valid: {sorted(VALID_MODES)}")
+        raise typer.Exit(code=2)
+
+    effective_mode = mode
+    if mode == "detail":
+        console.print(
+            "[yellow]detail mode requires review history (Phase 3 feature). "
+            "Falling back to errors mode.[/yellow]"
+        )
+        effective_mode = "errors"
+
+    system_prompt = load_system_prompt(effective_mode)
+
     try:
         client = make_client()
     except (GroqConfigError, OllamaConfigError, OllamaConnectionError) as error:
@@ -121,7 +136,7 @@ def _run_review(last: bool = False, file: str | None = None) -> None:
     backend_label = config.get_backend().upper()
     console.print(
         f"[bold]Reviewing {len(chunks)} file(s) via {backend_label} "
-        f"({client.model})[/bold]\n"
+        f"({client.model}) - mode: {effective_mode}[/bold]\n"
     )
 
     aggregated: list[FileReview] = []
@@ -141,7 +156,7 @@ def _run_review(last: bool = False, file: str | None = None) -> None:
             transient=True,
         ) as progress:
             progress.add_task(description=f"Reviewing {chunk.display_path}...", total=None)
-            raw = _complete_with_backoff(client, SYSTEM_PROMPT, user_prompt)
+            raw = _complete_with_backoff(client, system_prompt, user_prompt)
         if raw is None:
             console.print("  [red]skipped[/red] (Groq errors exceeded retries)")
             skipped += 1
@@ -150,7 +165,7 @@ def _run_review(last: bool = False, file: str | None = None) -> None:
             continue
 
         def _repair(repair_prompt: str) -> str:
-            repaired = _complete_with_backoff(client, SYSTEM_PROMPT, repair_prompt)
+            repaired = _complete_with_backoff(client, system_prompt, repair_prompt)
             return repaired or "{}"
 
         try:
@@ -308,15 +323,38 @@ def main_callback(
     file: str = typer.Option(
         None, "--file", help="Review only the staged diff for this file."
     ),
+    mode: str = typer.Option(
+        "errors",
+        "--mode",
+        help="Review mode: errors, security, perf, style, explain, detail.",
+    ),
 ) -> None:
     if ctx.invoked_subcommand is not None:
         return
 
     if config.config_exists():
-        _run_review(last=last, file=file)
+        _run_review(last=last, file=file, mode=mode)
         return
 
     _run_setup_wizard()
+
+
+@app.command("review")
+def review(
+    last: bool = typer.Option(
+        False, "--last", help="Review the last commit instead of staged changes."
+    ),
+    file: str = typer.Option(
+        None, "--file", help="Review only the staged diff for this file."
+    ),
+    mode: str = typer.Option(
+        "errors",
+        "--mode",
+        help="Review mode: errors, security, perf, style, explain, detail.",
+    ),
+) -> None:
+    """Review staged changes (default) or the last commit."""
+    _run_review(last=last, file=file, mode=mode)
 
 
 @app.command("setup")

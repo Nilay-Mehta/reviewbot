@@ -72,6 +72,35 @@ def get_model() -> str:
     return os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 
+def get_backend() -> str:
+    """Return 'groq' or 'ollama'. Defaults to 'groq' for legacy configs."""
+    cfg = load_config()
+    backend = cfg.get("backend")
+    if isinstance(backend, str) and backend.strip().lower() in {"groq", "ollama"}:
+        return backend.strip().lower()
+    return "groq"
+
+
+def get_ollama_model() -> str:
+    cfg = load_config()
+    ollama = cfg.get("ollama")
+    if isinstance(ollama, dict):
+        model = ollama.get("model")
+        if isinstance(model, str) and model.strip():
+            return model
+    return "qwen2.5-coder:3b"
+
+
+def get_ollama_host() -> str:
+    cfg = load_config()
+    ollama = cfg.get("ollama")
+    if isinstance(ollama, dict):
+        host = ollama.get("host")
+        if isinstance(host, str) and host.strip():
+            return host
+    return "http://localhost:11434"
+
+
 def _format_toml_value(value: object) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"

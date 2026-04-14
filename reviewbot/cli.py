@@ -7,8 +7,10 @@ import typer
 from rich.console import Console
 from rich.markup import escape
 from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from reviewbot import config, git_utils
+from reviewbot.clients import LLMClient, make_client
 from reviewbot.diff_parser import iter_reviewable_chunks
 from reviewbot.groq_client import GroqClient, GroqConfigError
 from reviewbot.models import FileReview, ReviewResult
@@ -33,12 +35,11 @@ app = typer.Typer(
     name="reviewbot",
     help="AI code review bot - runs LLM review over git diffs.",
     no_args_is_help=False,
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 console = Console()
 
 
-def _complete_with_backoff(client: GroqClient, system: str, user: str) -> str | None:
+def _complete_with_backoff(client: LLMClient, system: str, user: str) -> str | None:
     """Call Groq synchronously with retries on 429, 5xx, and connection errors.
 
     Returns None only after exhausting MAX_BACKOFF_ATTEMPTS - callers should
@@ -109,14 +110,17 @@ def _run_review(last: bool = False, file: str | None = None) -> None:
         console.print("[yellow]No reviewable text diffs found.[/yellow]")
         raise typer.Exit(code=0)
 
+    from reviewbot.ollama_client import OllamaConfigError, OllamaConnectionError
+
     try:
-        client = GroqClient()
-    except GroqConfigError as error:
+        client = make_client()
+    except (GroqConfigError, OllamaConfigError, OllamaConnectionError) as error:
         console.print(f"[red]config error:[/red] {escape(str(error))}")
         raise typer.Exit(code=2)
 
+    backend_label = config.get_backend().upper()
     console.print(
-        f"[bold]Reviewing {len(chunks)} file(s) via Groq "
+        f"[bold]Reviewing {len(chunks)} file(s) via {backend_label} "
         f"({client.model})[/bold]\n"
     )
 
@@ -130,7 +134,14 @@ def _run_review(last: bool = False, file: str | None = None) -> None:
         )
         user_prompt = build_user_prompt(chunk.display_path, chunk.diff_text)
 
-        raw = _complete_with_backoff(client, SYSTEM_PROMPT, user_prompt)
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+            transient=True,
+        ) as progress:
+            progress.add_task(description=f"Reviewing {chunk.display_path}...", total=None)
+            raw = _complete_with_backoff(client, SYSTEM_PROMPT, user_prompt)
         if raw is None:
             console.print("  [red]skipped[/red] (Groq errors exceeded retries)")
             skipped += 1
@@ -174,34 +185,6 @@ def _run_review(last: bool = False, file: str | None = None) -> None:
     raise typer.Exit(code=exit_code)
 
 
-def _parse_default_review_args(args: list[str]) -> tuple[bool, str | None]:
-    last = False
-    file: str | None = None
-    index = 0
-
-    while index < len(args):
-        arg = args[index]
-        if arg == "--last":
-            last = True
-            index += 1
-            continue
-        if arg == "--file":
-            if index + 1 >= len(args):
-                console.print("[red]Missing value for --file[/red]")
-                raise typer.Exit(code=2)
-            file = args[index + 1]
-            index += 2
-            continue
-        if arg.startswith("--file="):
-            file = arg.split("=", 1)[1]
-            index += 1
-            continue
-        console.print(f"[red]Unknown option:[/red] {escape(arg)}")
-        raise typer.Exit(code=2)
-
-    return last, file
-
-
 def _test_groq_credentials(api_key: str, model: str) -> tuple[bool, str]:
     original_key = config.get_api_key
     original_model = config.get_model
@@ -226,25 +209,18 @@ def _test_groq_credentials(api_key: str, model: str) -> tuple[bool, str]:
         config.get_model = original_model
 
 
-def _run_setup_wizard() -> None:
-    console.print(
-        Panel.fit(
-            "[bold cyan]Welcome to ReviewBot[/bold cyan]\n"
-            "Let's configure your AI code review bot for first use.",
-            border_style="cyan",
-        )
-    )
+def _test_ollama_connection(host: str, model: str) -> tuple[bool, str]:
+    try:
+        from reviewbot.ollama_client import OllamaClient
 
-    while True:
-        console.print("[bold]Choose your LLM backend:[/bold] 1) Groq  2) Ollama (coming soon)")
-        choice = typer.prompt("Backend", default="1").strip()
-        if choice == "1":
-            break
-        if choice == "2":
-            console.print("[yellow]Ollama support coming soon.[/yellow]")
-            continue
-        console.print("[red]Please enter 1 or 2.[/red]")
+        client = OllamaClient(host=host, model=model, timeout=30.0)
+        client.complete("You are a test. Respond in json.", '{"status": "ok"}')
+        return True, f"Connection successful ({model} @ {host})."
+    except Exception as error:
+        return False, str(error)
 
+
+def _setup_groq() -> None:
     console.print("[bold]Get your free API key at[/bold] https://console.groq.com/keys")
 
     while True:
@@ -258,7 +234,12 @@ def _run_setup_wizard() -> None:
                 console.print(f"[yellow]{escape(message)}[/yellow]")
             else:
                 console.print(f"[green]OK: {escape(message)}[/green]")
-            config.save_config({"groq": {"api_key": api_key, "model": model}})
+            config.save_config(
+                {
+                    "backend": "groq",
+                    "groq": {"api_key": api_key, "model": model},
+                }
+            )
             console.print("[green]Setup complete! Run `reviewbot` inside any git repo.[/green]")
             return
 
@@ -267,21 +248,60 @@ def _run_setup_wizard() -> None:
             raise typer.Exit(code=1)
 
 
+def _setup_ollama() -> None:
+    console.print("[bold]Ollama setup[/bold] - make sure the Ollama server is running locally.")
+    console.print("[dim]Install from https://ollama.com if you haven't yet.[/dim]")
+
+    default_host = "http://localhost:11434"
+    host = typer.prompt("Ollama host", default=default_host).strip() or default_host
+
+    default_model = "qwen2.5-coder:3b"
+    console.print(f"[dim]Press Enter to use default: {default_model}[/dim]")
+    model = (
+        typer.prompt("Model", default=default_model, show_default=False).strip()
+        or default_model
+    )
+
+    ok, message = _test_ollama_connection(host, model)
+    if ok:
+        console.print(f"[green]OK: {escape(message)}[/green]")
+        config.save_config(
+            {
+                "backend": "ollama",
+                "ollama": {"host": host, "model": model},
+            }
+        )
+        console.print("[green]Setup complete! Run `reviewbot` inside any git repo.[/green]")
+        return
+
+    console.print(f"[red]Connection test failed:[/red] {escape(message)}")
+    raise typer.Exit(code=1)
+
+
+def _run_setup_wizard() -> None:
+    console.print(
+        Panel.fit(
+            "[bold cyan]Welcome to ReviewBot[/bold cyan]\n"
+            "Let's configure your AI code review bot for first use.",
+            border_style="cyan",
+        )
+    )
+
+    while True:
+        console.print("[bold]Choose your LLM backend:[/bold] 1) Groq (cloud, free)  2) Ollama (local)")
+        choice = typer.prompt("Backend", default="1").strip()
+        if choice == "1":
+            _setup_groq()
+            return
+        if choice == "2":
+            _setup_ollama()
+            return
+        console.print("[red]Please enter 1 or 2.[/red]")
+
+
 @app.callback(invoke_without_command=True)
-def main_callback(ctx: typer.Context) -> None:
-    if ctx.invoked_subcommand is not None:
-        return
-
-    if config.config_exists():
-        last, file = _parse_default_review_args(list(ctx.args))
-        _run_review(last=last, file=file)
-        return
-
-    _run_setup_wizard()
-
-
-@app.command("review")
-def review(
+def main_callback(
+    ctx: typer.Context,
     last: bool = typer.Option(
         False, "--last", help="Review the last commit instead of staged changes."
     ),
@@ -289,8 +309,14 @@ def review(
         None, "--file", help="Review only the staged diff for this file."
     ),
 ) -> None:
-    """Review staged changes (default) or the last commit."""
-    _run_review(last=last, file=file)
+    if ctx.invoked_subcommand is not None:
+        return
+
+    if config.config_exists():
+        _run_review(last=last, file=file)
+        return
+
+    _run_setup_wizard()
 
 
 @app.command("setup")

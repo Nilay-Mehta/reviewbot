@@ -1,3 +1,4 @@
+from pathlib import Path
 import subprocess
 
 
@@ -33,3 +34,8 @@ def get_last_commit_diff() -> str:
 def get_diff_for_file(path: str) -> str:
     """Return the staged diff for a single file."""
     return _run(["diff", "--cached", "--no-color", "--", path])
+
+
+def get_repo_root() -> Path:
+    """Return the root directory of the current git repository."""
+    return Path(_run(["rev-parse", "--show-toplevel"]).strip())

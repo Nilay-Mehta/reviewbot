@@ -9,13 +9,18 @@ from rich.markup import escape
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from reviewbot import config, git_utils
+from reviewbot import config, git_utils, history, gitignore
 from reviewbot.clients import LLMClient, make_client
 from reviewbot.diff_parser import iter_reviewable_chunks
 from reviewbot.groq_client import GroqClient, GroqConfigError
 from reviewbot.models import FileReview, ReviewResult
 from reviewbot.output_parser import OutputParseError, parse_review_result
-from reviewbot.prompt_builder import build_user_prompt, load_system_prompt, VALID_MODES
+from reviewbot.prompt_builder import (
+    build_detail_context,
+    build_user_prompt,
+    load_system_prompt,
+    VALID_MODES,
+)
 from reviewbot.reporter import render_review_report
 
 try:
@@ -91,6 +96,16 @@ def _aggregate_verdict(file_reviews: list[FileReview]) -> str:
 
 
 def _run_review(last: bool = False, file: str | None = None, mode: str = "errors") -> None:
+    repo_root = None
+    try:
+        repo_root = git_utils.get_repo_root()
+        try:
+            gitignore.ensure_reviewbot_ignored(repo_root)
+        except Exception as error:
+            console.print(f"[dim]history: gitignore update failed ({escape(str(error))})[/dim]")
+    except git_utils.GitError:
+        repo_root = None
+
     try:
         if last:
             diff = git_utils.get_last_commit_diff()
@@ -118,12 +133,22 @@ def _run_review(last: bool = False, file: str | None = None, mode: str = "errors
         raise typer.Exit(code=2)
 
     effective_mode = mode
+    detail_context = ""
     if mode == "detail":
-        console.print(
-            "[yellow]detail mode requires review history (Phase 3 feature). "
-            "Falling back to errors mode.[/yellow]"
-        )
-        effective_mode = "errors"
+        try:
+            if repo_root is None:
+                repo_root = git_utils.get_repo_root()
+            previous = history.load_recent(repo_root, limit=5)
+        except Exception as error:
+            console.print(f"[dim]history: load failed ({escape(str(error))})[/dim]")
+            previous = []
+
+        if not previous:
+            console.print("[yellow]No review history yet - running detail mode as errors.[/yellow]")
+            effective_mode = "errors"
+        else:
+            detail_context = build_detail_context(previous)
+            console.print(f"[dim]detail mode: injecting {len(previous)} prior review(s) as context[/dim]")
 
     system_prompt = load_system_prompt(effective_mode)
 
@@ -147,7 +172,11 @@ def _run_review(last: bool = False, file: str | None = None, mode: str = "errors
             f"[cyan][{index}/{len(chunks)}][/cyan] "
             f"reviewing [bold]{chunk.display_path}[/bold]..."
         )
-        user_prompt = build_user_prompt(chunk.display_path, chunk.diff_text)
+        user_prompt = build_user_prompt(
+            chunk.display_path,
+            chunk.diff_text,
+            prior_context=detail_context if effective_mode == "detail" else "",
+        )
 
         with Progress(
             SpinnerColumn(),
@@ -194,6 +223,13 @@ def _run_review(last: bool = False, file: str | None = None, mode: str = "errors
         overall_verdict=_aggregate_verdict(aggregated),
         overall_summary=", ".join(summary_parts) + ".",
     )
+
+    try:
+        if repo_root is None:
+            repo_root = git_utils.get_repo_root()
+        history.save_review(repo_root, diff, final)
+    except Exception as error:
+        console.print(f"[dim]history: save failed ({escape(str(error))})[/dim]")
 
     console.print()
     exit_code = render_review_report(final, console)

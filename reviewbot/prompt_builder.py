@@ -1,5 +1,7 @@
-from pathlib import Path
 from importlib.resources import files
+from pathlib import Path
+
+from reviewbot.models import ReviewResult
 
 _PROMPTS_DIR = files("reviewbot") / "prompts"
 VALID_MODES = {"errors", "security", "perf", "style", "explain", "detail"}
@@ -105,13 +107,42 @@ Rules:
 """
 
 
-def build_user_prompt(filename: str, hunk: str) -> str:
-    return (
+def build_detail_context(previous: list[ReviewResult], max_chars: int = 2000) -> str:
+    """Compress prior reviews into a prompt-friendly string."""
+    lines = ["Previously flagged in this codebase:"]
+    current_length = len(lines[0])
+
+    for result in previous:
+        for file_review in result.files:
+            for comment in file_review.comments:
+                if comment.severity not in {"blocker", "major"}:
+                    continue
+                location = f"{comment.file}:{comment.line}" if comment.line is not None else comment.file
+                entry = f"- {location} [{comment.severity}/{comment.category}] {comment.message}"
+                additional = len(entry) + 1
+                if current_length + additional > max_chars:
+                    rendered = "\n".join(lines)
+                    if len(rendered) + 3 > max_chars:
+                        return rendered[: max(0, max_chars - 3)].rstrip() + "..."
+                    return rendered + "\n..."
+                lines.append(entry)
+                current_length += additional
+
+    if len(lines) == 1:
+        return ""
+    return "\n".join(lines)
+
+
+def build_user_prompt(filename: str, hunk: str, prior_context: str = "") -> str:
+    rendered = (
         USER_TEMPLATE
         .replace("__FILENAME__", filename)
         .replace("__LANGUAGE__", detect_language(filename))
         .replace("__HUNK__", hunk)
     )
+    if prior_context:
+        return f"{prior_context}\n\n---\n\n{rendered}"
+    return rendered
 
 
 def estimate_tokens(text: str) -> int:

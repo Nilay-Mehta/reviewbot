@@ -1,4 +1,4 @@
-# ReviewBot
+# ReviewBot (Under-Production)
 
 AI-powered code reviewer that runs from your terminal. Point it at any git repo, and it reviews staged changes or recent commits using either Groq or Ollama, returning structured, severity-ranked comments with concrete fix suggestions.
 

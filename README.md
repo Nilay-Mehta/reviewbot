@@ -177,4 +177,4 @@ Commits with blocker or major findings are blocked. Bypass with `git commit --no
 
 ## License
 
-MIT
+GPL-3.0

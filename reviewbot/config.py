@@ -73,12 +73,32 @@ def get_model() -> str:
 
 
 def get_backend() -> str:
-    """Return 'groq' or 'ollama'. Defaults to 'groq' for legacy configs."""
+    """Return 'groq', 'ollama', or 'gemini'. Defaults to 'groq' for legacy configs."""
     cfg = load_config()
     backend = cfg.get("backend")
-    if isinstance(backend, str) and backend.strip().lower() in {"groq", "ollama"}:
+    if isinstance(backend, str) and backend.strip().lower() in {"groq", "ollama", "gemini"}:
         return backend.strip().lower()
     return "groq"
+
+
+def get_gemini_api_key() -> str | None:
+    cfg = load_config()
+    gemini = cfg.get("gemini")
+    if isinstance(gemini, dict):
+        api_key = gemini.get("api_key")
+        if isinstance(api_key, str) and api_key.strip():
+            return api_key
+    return os.getenv("GEMINI_API_KEY") or None
+
+
+def get_gemini_model() -> str:
+    cfg = load_config()
+    gemini = cfg.get("gemini")
+    if isinstance(gemini, dict):
+        model = gemini.get("model")
+        if isinstance(model, str) and model.strip():
+            return model
+    return "gemini-2.0-flash"
 
 
 def get_ollama_model() -> str:

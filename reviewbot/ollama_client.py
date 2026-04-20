@@ -54,6 +54,10 @@ class OllamaClient:
             raise OllamaConnectionError(
                 f"Could not connect to Ollama at {self.host}. Is it running?"
             ) from e
+        except httpx.ReadTimeout as e:
+            raise OllamaConnectionError(
+                f"Ollama timed out after {self.timeout}s. Model too slow or too large for your RAM."
+            ) from e
         except httpx.HTTPStatusError as e:
             raise OllamaConnectionError(
                 f"Ollama returned {e.response.status_code}: {e.response.text[:200]}"

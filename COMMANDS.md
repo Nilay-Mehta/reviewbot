@@ -22,6 +22,20 @@ Review only one staged file:
 reviewbot --file path/to/file.py
 ```
 
+Review the last `N` commits as one combined diff:
+
+```bash
+reviewbot --commits 3
+reviewbot -n 3
+```
+
+Review every commit since a ref:
+
+```bash
+reviewbot --since main
+reviewbot --since HEAD~5
+```
+
 Run the setup wizard again:
 
 ```bash
@@ -72,6 +86,32 @@ Follow-up review using repo-local history:
 reviewbot --mode detail
 ```
 
+## Review Sources And Modifiers
+
+Review recent commits one commit at a time:
+
+```bash
+reviewbot --commits 3 --per-commit
+```
+
+Review the last commit as a per-commit run:
+
+```bash
+reviewbot --last --per-commit
+```
+
+Skip review if the diff touches too many files:
+
+```bash
+reviewbot --commits 3 --max-files 10
+```
+
+Review commits since a ref with a specific mode:
+
+```bash
+reviewbot --since main --mode security
+```
+
 ## Common Combinations
 
 Review the last commit with the default review lens:
@@ -104,6 +144,24 @@ Review one staged file for performance concerns:
 reviewbot --file path/to/file.py --mode perf
 ```
 
+Review the last 2 commits with a combined diff:
+
+```bash
+reviewbot --commits 2 --mode errors
+```
+
+Review the last 2 commits one-by-one:
+
+```bash
+reviewbot --commits 2 --per-commit
+```
+
+Explain all changes since a ref:
+
+```bash
+reviewbot --since HEAD~2 --mode explain
+```
+
 ## Subcommand Form
 
 ReviewBot also supports an explicit `review` subcommand:
@@ -112,6 +170,10 @@ ReviewBot also supports an explicit `review` subcommand:
 reviewbot review
 reviewbot review --last
 reviewbot review --file path/to/file.py
+reviewbot review --commits 3
+reviewbot review --since main
+reviewbot review --per-commit --last
+reviewbot review --max-files 10 --commits 3
 reviewbot review --mode style
 ```
 
@@ -127,6 +189,12 @@ This behaves the same as the shorter top-level command forms.
 
 - Detail mode uses recent review history stored in `.reviewbot/history` inside the repo.
 - If no history exists yet, it falls back to `errors` mode with a warning.
+
+## Rules
+
+- `--since` and `--commits` cannot be used together.
+- `--per-commit` requires `--since`, `--commits`, or `--last`.
+- Source priority is: `--since` > `--commits` > `--last` > `--file` > staged changes.
 
 ## Help Commands
 

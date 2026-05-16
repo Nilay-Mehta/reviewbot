@@ -16,7 +16,7 @@ Review the last commit:
 reviewbot --last
 ```
 
-Review only one staged file:
+Review only one staged fil:
 
 ```bash
 reviewbot --file path/to/file.py

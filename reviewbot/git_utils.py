@@ -36,8 +36,7 @@ def get_commits_diff(n: int) -> str:
     try:
         return _run(["diff", f"HEAD~{n}", "HEAD", "--no-color"])
     except GitError:
-        # N exceeds total commits — diff from root (empty tree)
-        return _run(["diff", "4b825dc642cb6eb9a060e54bf899d69f82cf7137", "HEAD", "--no-color"])
+        return _run(["diff", _empty_tree_sha(), "HEAD", "--no-color"])
 
 
 def get_since_diff(ref: str) -> str:
@@ -57,13 +56,24 @@ def get_since_commit_list(ref: str) -> list[str]:
     return [sha.strip() for sha in output.strip().splitlines() if sha.strip()]
 
 
+def _empty_tree_sha() -> str:
+    """Write the empty tree to the object DB and return its SHA."""
+    try:
+        result = subprocess.run(
+            ["git", "hash-object", "-w", "-t", "tree", "--stdin"],
+            input=b"", capture_output=True, check=True,
+        )
+        return result.stdout.decode().strip()
+    except Exception:
+        return "4b825dc642cb6eb9a060e54bf899d69f82cf7137"
+
+
 def get_single_commit_diff(sha: str) -> str:
     """Return the diff for a single commit (handles initial commit)."""
     try:
         return _run(["diff", f"{sha}~1", sha, "--no-color"])
     except GitError:
-        # Initial commit has no parent — diff against empty tree
-        return _run(["diff", "4b825dc642cb6eb9a060e54bf899d69f82cf7137", sha, "--no-color"])
+        return _run(["diff", _empty_tree_sha(), sha, "--no-color"])
 
 
 def get_diff_for_file(path: str) -> str:

@@ -4,6 +4,10 @@ AI-powered code reviewer that runs from your terminal. Point it at any git repo,
 
 ![ReviewBot Demo](assets/demo.png)
 
+## Website
+
+Live site: [reviewbot-murex.vercel.app](https://reviewbot-murex.vercel.app/)
+
 ## Features
 
 - **One-command setup** - interactive wizard configures everything on first run

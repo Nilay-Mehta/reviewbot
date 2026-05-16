@@ -256,7 +256,7 @@
     }
 
     .product-shot {
-      padding: 20px;
+      padding: 16px;
       border-radius: 32px;
       background: linear-gradient(180deg, rgba(255, 250, 240, 0.9), rgba(248, 241, 224, 0.78));
       border: 1px solid rgba(44, 35, 23, 0.12);
@@ -283,7 +283,7 @@
       border: 1px solid rgba(44, 35, 23, 0.1);
       background: rgba(255, 255, 255, 0.6);
       box-shadow: 0 16px 50px rgba(22, 16, 10, 0.16);
-      max-height: 560px;
+      max-height: 470px;
     }
 
     .shot-frame img {
@@ -297,22 +297,22 @@
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
-      margin-top: 14px;
+      margin-top: 10px;
     }
 
     .shot-caption div {
-      padding: 12px 14px;
+      padding: 10px 12px;
       border-radius: 18px;
       background: rgba(255, 255, 255, 0.66);
       border: 1px solid rgba(44, 35, 23, 0.08);
       color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     .shot-caption strong {
       display: block;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
       color: var(--ink);
       font-size: 12px;
       letter-spacing: 0.06em;
@@ -851,15 +851,15 @@
           <div class="shot-caption">
             <div>
               <strong>Source-aware</strong>
-              Reviews staged changes, a file, the last commit, or commit ranges.
+              Staged changes, one file, the last commit, or commit ranges.
             </div>
             <div>
               <strong>Structured output</strong>
-              Returns severity-ranked findings instead of free-form chat output.
+              Severity-ranked findings instead of free-form chat output.
             </div>
             <div>
               <strong>CLI-first</strong>
-              The real product is local and terminal-based; the browser demo below is prerecorded.
+              The real product is local; the browser demo below is prerecorded.
             </div>
           </div>
         </div>
@@ -1029,7 +1029,7 @@ pipx install -e .</pre>
           </article>
           <article class="install-card">
             <div class="install-card-head">
-              <h3>Later</h3>
+              <h3>Configure or choose model</h3>
               <button class="copy-button" type="button" data-copy="reviewbot setup&#10;reviewbot switch">Copy</button>
             </div>
             <pre>reviewbot setup

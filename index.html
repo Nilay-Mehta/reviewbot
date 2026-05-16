@@ -117,8 +117,7 @@
     }
 
     .hero {
-      padding: 40px 0 32px;
-      min-height: calc(100vh - 78px);
+      padding: 32px 0 20px;
       display: flex;
       align-items: center;
     }
@@ -608,7 +607,7 @@
 
     .install-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
       margin-top: 12px;
       align-items: start;
@@ -625,6 +624,14 @@
       flex-direction: column;
       align-self: start;
       height: auto;
+      gap: 12px;
+    }
+
+    .install-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
     }
 
     .feature-card h3,
@@ -651,7 +658,6 @@
 
     .install-card pre,
     .section-card pre {
-      margin-top: 14px;
       padding: 14px;
       border-radius: 18px;
       background: #171311;
@@ -662,19 +668,17 @@
       overflow-x: auto;
     }
 
-    .code-block {
-      position: relative;
+    .install-card pre {
+      margin-top: 0;
+      white-space: pre;
     }
 
     .copy-button {
-      position: absolute;
-      top: 10px;
-      right: 10px;
       border: 1px solid rgba(248, 238, 224, 0.12);
-      background: rgba(255, 255, 255, 0.08);
-      color: rgba(248, 238, 224, 0.84);
-      min-height: 32px;
-      padding: 0 10px;
+      background: rgba(29, 26, 22, 0.06);
+      color: var(--ink);
+      min-height: 34px;
+      padding: 0 12px;
       border-radius: 999px;
       font: inherit;
       font-size: 12px;
@@ -684,15 +688,14 @@
     }
 
     .copy-button:hover {
-      background: rgba(255, 255, 255, 0.14);
-      color: #fff8ec;
-      border-color: rgba(248, 238, 224, 0.24);
+      background: rgba(29, 26, 22, 0.1);
+      border-color: rgba(29, 26, 22, 0.18);
     }
 
     .copy-button.done {
       background: rgba(95, 177, 141, 0.18);
       border-color: rgba(95, 177, 141, 0.3);
-      color: #d6f0e4;
+      color: #0e5d52;
     }
 
     .backends {
@@ -737,7 +740,7 @@
       }
 
       .install-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr;
       }
 
       .workflow-steps {
@@ -1002,35 +1005,35 @@
 
         <div class="install-grid">
           <article class="install-card">
-            <h3>Install from GitHub</h3>
-            <div class="code-block">
+            <div class="install-card-head">
+              <h3>Install from GitHub</h3>
               <button class="copy-button" type="button" data-copy="pipx install git+https://github.com/Nilay-Mehta/reviewbot.git">Copy</button>
-              <pre>pipx install git+https://github.com/Nilay-Mehta/reviewbot.git</pre>
             </div>
+            <pre>pipx install git+https://github.com/Nilay-Mehta/reviewbot.git</pre>
           </article>
           <article class="install-card">
-            <h3>Install from source</h3>
-            <div class="code-block">
+            <div class="install-card-head">
+              <h3>Install from source</h3>
               <button class="copy-button" type="button" data-copy="git clone https://github.com/Nilay-Mehta/reviewbot.git&#10;cd reviewbot&#10;pipx install -e .">Copy</button>
-              <pre>git clone https://github.com/Nilay-Mehta/reviewbot.git
+            </div>
+            <pre>git clone https://github.com/Nilay-Mehta/reviewbot.git
 cd reviewbot
 pipx install -e .</pre>
-            </div>
           </article>
           <article class="install-card">
-            <h3>First run</h3>
-            <div class="code-block">
+            <div class="install-card-head">
+              <h3>First run</h3>
               <button class="copy-button" type="button" data-copy="reviewbot">Copy</button>
-              <pre>reviewbot</pre>
             </div>
+            <pre>reviewbot</pre>
           </article>
           <article class="install-card">
-            <h3>Later</h3>
-            <div class="code-block">
+            <div class="install-card-head">
+              <h3>Later</h3>
               <button class="copy-button" type="button" data-copy="reviewbot setup&#10;reviewbot switch">Copy</button>
-              <pre>reviewbot setup
-reviewbot switch</pre>
             </div>
+            <pre>reviewbot setup
+reviewbot switch</pre>
           </article>
         </div>
       </div>

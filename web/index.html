@@ -599,8 +599,7 @@
       font-size: 14px;
     }
 
-    .feature-grid,
-    .install-grid {
+    .feature-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 16px;
@@ -608,6 +607,10 @@
     }
 
     .install-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 12px;
       align-items: start;
     }
 
@@ -659,6 +662,39 @@
       overflow-x: auto;
     }
 
+    .code-block {
+      position: relative;
+    }
+
+    .copy-button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      border: 1px solid rgba(248, 238, 224, 0.12);
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(248, 238, 224, 0.84);
+      min-height: 32px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 180ms ease, color 180ms ease, border-color 180ms ease;
+    }
+
+    .copy-button:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff8ec;
+      border-color: rgba(248, 238, 224, 0.24);
+    }
+
+    .copy-button.done {
+      background: rgba(95, 177, 141, 0.18);
+      border-color: rgba(95, 177, 141, 0.3);
+      color: #d6f0e4;
+    }
+
     .backends {
       display: grid;
       grid-template-columns: 1.15fr 0.85fr;
@@ -696,9 +732,12 @@
       .terminal-grid,
       .backends,
       .feature-grid,
-      .install-grid,
       .metrics {
         grid-template-columns: 1fr;
+      }
+
+      .install-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .workflow-steps {
@@ -725,6 +764,10 @@
       }
 
       .workflow-steps {
+        grid-template-columns: 1fr;
+      }
+
+      .install-grid {
         grid-template-columns: 1fr;
       }
 
@@ -963,21 +1006,34 @@
         <div class="install-grid">
           <article class="install-card">
             <h3>Install from GitHub</h3>
-            <pre>pipx install git+https://github.com/Nilay-Mehta/reviewbot.git</pre>
+            <div class="code-block">
+              <button class="copy-button" type="button" data-copy="pipx install git+https://github.com/Nilay-Mehta/reviewbot.git">Copy</button>
+              <pre>pipx install git+https://github.com/Nilay-Mehta/reviewbot.git</pre>
+            </div>
           </article>
           <article class="install-card">
             <h3>Install from source</h3>
-            <pre>git clone https://github.com/Nilay-Mehta/reviewbot.git
+            <div class="code-block">
+              <button class="copy-button" type="button" data-copy="git clone https://github.com/Nilay-Mehta/reviewbot.git&#10;cd reviewbot&#10;pipx install -e .">Copy</button>
+              <pre>git clone https://github.com/Nilay-Mehta/reviewbot.git
 cd reviewbot
 pipx install -e .</pre>
+            </div>
           </article>
           <article class="install-card">
             <h3>First run</h3>
-            <pre>reviewbot
-
-# later:
-reviewbot setup
+            <div class="code-block">
+              <button class="copy-button" type="button" data-copy="reviewbot">Copy</button>
+              <pre>reviewbot</pre>
+            </div>
+          </article>
+          <article class="install-card">
+            <h3>Later</h3>
+            <div class="code-block">
+              <button class="copy-button" type="button" data-copy="reviewbot setup&#10;reviewbot switch">Copy</button>
+              <pre>reviewbot setup
 reviewbot switch</pre>
+            </div>
           </article>
         </div>
       </div>
@@ -1318,6 +1374,41 @@ reviewbot --model qwen/qwen3-32b --last</pre>
         step.classList.toggle("active", index < 4);
       });
     }
+
+    document.querySelectorAll(".copy-button").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const text = button.dataset.copy || "";
+        const original = button.textContent;
+
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            const area = document.createElement("textarea");
+            area.value = text;
+            area.setAttribute("readonly", "");
+            area.style.position = "absolute";
+            area.style.left = "-9999px";
+            document.body.appendChild(area);
+            area.select();
+            document.execCommand("copy");
+            document.body.removeChild(area);
+          }
+
+          button.textContent = "Copied";
+          button.classList.add("done");
+          window.setTimeout(() => {
+            button.textContent = original;
+            button.classList.remove("done");
+          }, 1400);
+        } catch (error) {
+          button.textContent = "Press Ctrl+C";
+          window.setTimeout(() => {
+            button.textContent = original;
+          }, 1600);
+        }
+      });
+    });
 
     renderControls();
     renderDemo();

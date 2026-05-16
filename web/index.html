@@ -152,7 +152,7 @@
       color: var(--muted);
       font-size: 1.06rem;
       line-height: 1.72;
-      max-width: 62ch;
+      max-width: 54ch;
     }
 
     .hero-points {
@@ -195,6 +195,32 @@
       flex-wrap: wrap;
       gap: 12px;
       margin-top: 10px;
+    }
+
+    .hero-install {
+      margin-top: 16px;
+      max-width: 32rem;
+      padding: 14px 16px;
+      border-radius: 22px;
+      background: #171311;
+      color: #f8eee0;
+      box-shadow: 0 16px 40px rgba(14, 10, 8, 0.2);
+    }
+
+    .hero-install strong {
+      display: block;
+      margin-bottom: 8px;
+      color: rgba(248, 238, 224, 0.78);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .hero-install code {
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.8;
+      word-break: break-all;
     }
 
     .button {
@@ -248,17 +274,19 @@
     }
 
     .shot-frame {
-      margin-top: 18px;
       overflow: hidden;
       border-radius: 24px;
       border: 1px solid rgba(44, 35, 23, 0.1);
       background: rgba(255, 255, 255, 0.6);
       box-shadow: 0 16px 50px rgba(22, 16, 10, 0.16);
+      max-height: 560px;
     }
 
     .shot-frame img {
       width: 100%;
-      height: auto;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 24%;
     }
 
     .shot-caption {
@@ -623,17 +651,28 @@
     }
 
     .footer {
-      padding: 18px 0 42px;
+      padding: 28px 0 42px;
       color: var(--muted);
       font-size: 14px;
     }
 
     .footer .shell {
       display: flex;
-      align-items: center;
+      align-items: start;
       justify-content: space-between;
       gap: 16px;
       flex-wrap: wrap;
+    }
+
+    .footer-meta {
+      display: grid;
+      gap: 6px;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
     }
 
     @media (max-width: 1080px) {
@@ -709,15 +748,8 @@
       <div class="shell hero-grid">
         <div class="hero-copy">
           <span class="eyebrow">Git-native AI review CLI</span>
-          <h1>Review staged diffs, commit ranges, and follow-up changes without leaving the terminal.</h1>
-          <p>
-            ReviewBot is a terminal-first code review tool built around real git workflows. It reviews staged changes,
-            the last commit, a single file, or commit ranges, then returns structured findings with severities and categories.
-          </p>
-          <p>
-            The repo currently documents Groq, Ollama, and Gemini backends, mode-based reviews, repo-local history, and
-            commit-range review paths. This website is a static wrapper around that CLI, not a live hosted API.
-          </p>
+          <h1>Code review without leaving the terminal.</h1>
+          <p>Review staged changes, commit ranges, and follow-up diffs with structured findings, mode-based review lenses, and repo-local history.</p>
 
           <div class="hero-points">
             <div class="hero-point">
@@ -743,13 +775,14 @@
             <a class="button secondary" href="#install">Local setup</a>
             <a class="button secondary" href="#workflow">Try the browser demo</a>
           </div>
+
+          <div class="hero-install">
+            <strong>Install from GitHub</strong>
+            <code>pipx install git+https://github.com/Nilay-Mehta/reviewbot.git</code>
+          </div>
         </div>
 
         <div class="product-shot">
-          <h2>Actual CLI screenshot</h2>
-          <p>
-            This image comes from the repo assets and shows ReviewBot in its real terminal-shaped environment rather than a browser-only mock.
-          </p>
           <div class="shot-frame">
             <img src="assets/demo.png" alt="ReviewBot terminal screenshot">
           </div>
@@ -868,8 +901,8 @@
             <span>history entries kept before rotation in `.reviewbot/history`</span>
           </div>
           <div class="metric">
-            <strong>3s</strong>
-            <span>inter-call throttle documented in the repo, with 10s backoff on HTTP 429</span>
+            <strong>5</strong>
+            <span>review sources available: staged changes, last commit, single file, last N commits, and since-ref diffs</span>
           </div>
         </div>
 
@@ -1006,8 +1039,14 @@ reviewbot --model qwen/qwen3-32b --last</pre>
 
   <footer class="footer">
     <div class="shell">
-      <span>Static website wrapper for the ReviewBot repo. No browser API calls, no live model execution.</span>
-      <a href="https://github.com/Nilay-Mehta/reviewbot" target="_blank" rel="noreferrer">github.com/Nilay-Mehta/reviewbot</a>
+      <div class="footer-meta">
+        <strong>Built by Nilay Mehta</strong>
+        <span>ReviewBot is distributed under GPL-3.0. The browser demo is prerecorded and does not call live models.</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/Nilay-Mehta/reviewbot" target="_blank" rel="noreferrer">GitHub</a>
+        <a href="https://www.linkedin.com/in/m-nilay/" target="_blank" rel="noreferrer">LinkedIn</a>
+      </div>
     </div>
   </footer>
 

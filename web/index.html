@@ -946,27 +946,25 @@
           <div>
             <h2>Install and run locally</h2>
           </div>
-          <p>
-            These commands come directly from the repo docs. The hosted website is static; the real review flow lives in the local CLI.
-          </p>
+          <p>Install ReviewBot with `pipx`, run setup once, and review code from your terminal.</p>
         </div>
 
         <div class="install-grid">
           <article class="install-card">
             <h3>Install from GitHub</h3>
-            <p>The README documents a `pipx` install directly from the GitHub repo.</p>
+            <p>Use the published GitHub install command.</p>
             <pre>pipx install git+https://github.com/Nilay-Mehta/reviewbot.git</pre>
           </article>
           <article class="install-card">
             <h3>Install from source</h3>
-            <p>The local editable install path in the repo uses `pipx install -e .` after cloning.</p>
+            <p>Clone the repo and install an editable local copy.</p>
             <pre>git clone https://github.com/Nilay-Mehta/reviewbot.git
 cd reviewbot
 pipx install -e .</pre>
           </article>
           <article class="install-card">
             <h3>First run</h3>
-            <p>The documented setup flow starts by running `reviewbot`, which launches the interactive setup wizard if config is missing.</p>
+            <p>Run the CLI once to start setup, then switch backend or model later if needed.</p>
             <pre>reviewbot
 
 # later:

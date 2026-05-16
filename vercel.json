@@ -1,8 +1,14 @@
 {
-  "rewrites": [
+  "redirects": [
     {
-      "source": "/",
-      "destination": "/web/index.html"
+      "source": "/web",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/web/index.html",
+      "destination": "/",
+      "permanent": false
     }
   ]
 }

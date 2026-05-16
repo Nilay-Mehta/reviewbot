@@ -125,8 +125,15 @@
     .hero-grid {
       display: grid;
       grid-template-columns: 1.02fr 1.08fr;
+      grid-template-areas:
+        "copy shot"
+        "lower lower";
       gap: 28px;
       align-items: start;
+    }
+
+    .hero-copy {
+      grid-area: copy;
     }
 
     .eyebrow {
@@ -163,7 +170,7 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
-      margin: 22px 0 26px;
+      margin: 0;
     }
 
     .hero-point,
@@ -256,11 +263,26 @@
     }
 
     .product-shot {
+      grid-area: shot;
       padding: 16px;
       border-radius: 32px;
       background: linear-gradient(180deg, rgba(255, 250, 240, 0.9), rgba(248, 241, 224, 0.78));
       border: 1px solid rgba(44, 35, 23, 0.12);
       box-shadow: var(--shadow);
+    }
+
+    .hero-lower {
+      grid-area: lower;
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .hero-support {
+      display: grid;
+      gap: 14px;
+      align-content: start;
     }
 
     .product-shot h2 {
@@ -739,6 +761,14 @@
         grid-template-columns: 1fr;
       }
 
+      .hero-grid {
+        grid-template-areas:
+          "copy"
+          "shot"
+          "lower";
+      }
+
+      .hero-lower,
       .install-grid {
         grid-template-columns: 1fr;
       }
@@ -812,36 +842,6 @@
           <span class="eyebrow">Git-native AI review CLI</span>
           <h1>Code review without leaving the terminal.</h1>
           <p>Review staged changes, commit ranges, and follow-up diffs with structured findings, mode-based review lenses, and repo-local history.</p>
-
-          <div class="hero-points">
-            <div class="hero-point">
-              <strong>Review what changed</strong>
-              <span>Use staged changes, a single file, the last commit, or commit ranges without changing your workflow.</span>
-            </div>
-            <div class="hero-point">
-              <strong>Pick the lens</strong>
-              <span>Switch between `errors`, `security`, `perf`, `style`, `explain`, and `detail` depending on what you need.</span>
-            </div>
-            <div class="hero-point">
-              <strong>Keep context</strong>
-              <span>`detail` mode uses repo-local history from `.reviewbot/history` so follow-up reviews can reference past findings.</span>
-            </div>
-            <div class="hero-point">
-              <strong>Change backends fast</strong>
-              <span>Use `reviewbot switch` or a one-run `--model` override to swap between documented backend/model choices.</span>
-            </div>
-          </div>
-
-          <div class="hero-actions">
-            <a class="button primary" href="https://github.com/Nilay-Mehta/reviewbot" target="_blank" rel="noreferrer">View GitHub</a>
-            <a class="button secondary" href="#install">Local setup</a>
-            <a class="button secondary" href="#workflow">Try the browser demo</a>
-          </div>
-
-          <div class="hero-install">
-            <strong>Install from GitHub</strong>
-            <code>pipx install git+https://github.com/Nilay-Mehta/reviewbot.git</code>
-          </div>
         </div>
 
         <div class="product-shot">
@@ -860,6 +860,40 @@
             <div>
               <strong>CLI-first</strong>
               The real product is local; the browser demo below is prerecorded.
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-lower">
+          <div class="hero-points">
+            <div class="hero-point">
+              <strong>Review what changed</strong>
+              <span>Use staged changes, a single file, the last commit, or commit ranges without changing your workflow.</span>
+            </div>
+            <div class="hero-point">
+              <strong>Pick the lens</strong>
+              <span>Switch between `errors`, `security`, `perf`, `style`, `explain`, and `detail` depending on what you need.</span>
+            </div>
+            <div class="hero-point">
+              <strong>Keep context</strong>
+              <span>`detail` mode uses repo-local history from `.reviewbot/history` so follow-up reviews can reference past findings.</span>
+            </div>
+            <div class="hero-point">
+              <strong>Change backends fast</strong>
+              <span>Use `reviewbot switch` or a one-run `--model` override to swap between backend and model choices.</span>
+            </div>
+          </div>
+
+          <div class="hero-support">
+            <div class="hero-actions">
+              <a class="button primary" href="https://github.com/Nilay-Mehta/reviewbot" target="_blank" rel="noreferrer">View GitHub</a>
+              <a class="button secondary" href="#install">Local setup</a>
+              <a class="button secondary" href="#workflow">Try the browser demo</a>
+            </div>
+
+            <div class="hero-install">
+              <strong>Install from GitHub</strong>
+              <code>pipx install git+https://github.com/Nilay-Mehta/reviewbot.git</code>
             </div>
           </div>
         </div>

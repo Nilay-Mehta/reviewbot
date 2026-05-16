@@ -225,7 +225,7 @@
       color: var(--brand-strong);
     }
 
-    .workflow-panel {
+    .product-shot {
       padding: 20px;
       border-radius: 32px;
       background: linear-gradient(180deg, rgba(255, 250, 240, 0.9), rgba(248, 241, 224, 0.78));
@@ -233,18 +233,62 @@
       box-shadow: var(--shadow);
     }
 
-    .workflow-panel h2 {
+    .product-shot h2 {
       margin: 0 0 8px;
       font-size: 1rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
-    .workflow-panel p {
+    .product-shot p {
       margin: 0;
       color: var(--muted);
       font-size: 14px;
       line-height: 1.55;
+    }
+
+    .shot-frame {
+      margin-top: 18px;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid rgba(44, 35, 23, 0.1);
+      background: rgba(255, 255, 255, 0.6);
+      box-shadow: 0 16px 50px rgba(22, 16, 10, 0.16);
+    }
+
+    .shot-frame img {
+      width: 100%;
+      height: auto;
+    }
+
+    .shot-caption {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .shot-caption div {
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.66);
+      border: 1px solid rgba(44, 35, 23, 0.08);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .shot-caption strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .demo-section {
+      padding-top: 8px;
     }
 
     .control-groups {
@@ -629,6 +673,10 @@
         grid-template-columns: 1fr;
       }
 
+      .shot-caption {
+        grid-template-columns: 1fr;
+      }
+
       .terminal-body {
         padding: 14px;
       }
@@ -661,49 +709,81 @@
       <div class="shell hero-grid">
         <div class="hero-copy">
           <span class="eyebrow">Git-native AI review CLI</span>
-          <h1>Pick a diff source. Pick a mode. Get a structured review in the terminal.</h1>
+          <h1>Review staged diffs, commit ranges, and follow-up changes without leaving the terminal.</h1>
           <p>
-            ReviewBot is a terminal-first code review tool built around actual git workflows. It reviews staged changes,
-            the last commit, a single file, or commit ranges, then validates model output into a structured report.
+            ReviewBot is a terminal-first code review tool built around real git workflows. It reviews staged changes,
+            the last commit, a single file, or commit ranges, then returns structured findings with severities and categories.
           </p>
           <p>
             The repo currently documents Groq, Ollama, and Gemini backends, mode-based reviews, repo-local history, and
-            commit-range review paths. The website below is a static wrapper around that workflow, not a live hosted API.
+            commit-range review paths. This website is a static wrapper around that CLI, not a live hosted API.
           </p>
 
           <div class="hero-points">
             <div class="hero-point">
-              <strong>Sources</strong>
-              <span>`reviewbot`, `--last`, `--file`, `--commits`, `--since`, and `--per-commit` mirror the CLI.</span>
+              <strong>Review what changed</strong>
+              <span>Use staged changes, a single file, the last commit, or commit ranges without changing your workflow.</span>
             </div>
             <div class="hero-point">
-              <strong>Modes</strong>
-              <span>`errors`, `security`, `perf`, `style`, `explain`, and `detail` are all present in the repo.</span>
+              <strong>Pick the lens</strong>
+              <span>Switch between `errors`, `security`, `perf`, `style`, `explain`, and `detail` depending on what you need.</span>
             </div>
             <div class="hero-point">
-              <strong>Memory</strong>
-              <span>Successful reviews save to `.reviewbot/history` with sha256-keyed JSON and 30-entry rotation.</span>
+              <strong>Keep context</strong>
+              <span>`detail` mode uses repo-local history from `.reviewbot/history` so follow-up reviews can reference past findings.</span>
             </div>
             <div class="hero-point">
-              <strong>Safety</strong>
-              <span>Docs and code mention a 3s throttle, 10s 429 backoff, and max 3 retry attempts.</span>
+              <strong>Change backends fast</strong>
+              <span>Use `reviewbot switch` or a one-run `--model` override to swap between documented backend/model choices.</span>
             </div>
           </div>
 
           <div class="hero-actions">
-            <a class="button primary" href="#workflow">Try the browser demo</a>
+            <a class="button primary" href="https://github.com/Nilay-Mehta/reviewbot" target="_blank" rel="noreferrer">View GitHub</a>
             <a class="button secondary" href="#install">Local setup</a>
-            <a class="button secondary" href="https://github.com/Nilay-Mehta/reviewbot" target="_blank" rel="noreferrer">View GitHub</a>
+            <a class="button secondary" href="#workflow">Try the browser demo</a>
           </div>
         </div>
 
-        <div class="workflow-panel" id="workflow">
-          <h2>Deterministic browser demo</h2>
+        <div class="product-shot">
+          <h2>Actual CLI screenshot</h2>
           <p>
-            This interactive panel shows the repo’s workflow with prerecorded data only.
-            It does not call Groq, Ollama, Gemini, or any real backend in the browser.
+            This image comes from the repo assets and shows ReviewBot in its real terminal-shaped environment rather than a browser-only mock.
           </p>
+          <div class="shot-frame">
+            <img src="assets/demo.png" alt="ReviewBot terminal screenshot">
+          </div>
+          <div class="shot-caption">
+            <div>
+              <strong>Source-aware</strong>
+              Reviews staged changes, a file, the last commit, or commit ranges.
+            </div>
+            <div>
+              <strong>Structured output</strong>
+              Returns severity-ranked findings instead of free-form chat output.
+            </div>
+            <div>
+              <strong>CLI-first</strong>
+              The real product is local and terminal-based; the browser demo below is prerecorded.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
+    <section class="demo-section" id="workflow">
+      <div class="shell">
+        <div class="section-heading stacked">
+          <div>
+            <h2>See the flow in the browser</h2>
+          </div>
+          <p>
+            This deterministic demo is a guided playback of the workflow documented in the repo. It does not call Groq,
+            Ollama, Gemini, or any live backend from the browser.
+          </p>
+        </div>
+
+        <div class="product-shot">
           <div class="control-groups">
             <div class="control-group">
               <label>Pick a review source</label>
@@ -767,11 +847,10 @@
       <div class="shell">
         <div class="section-heading">
           <div>
-            <h2>Workflow-first, not generic</h2>
+            <h2>What you can do with it</h2>
           </div>
           <p>
-            The repo points to a very specific product shape: terminal entry points, git-native diff sources, mode-specific prompts,
-            validated structured output, and repo-local review memory.
+            The repo points to a practical developer tool: choose what changed, choose how you want it reviewed, and keep history around for follow-up passes.
           </p>
         </div>
 
